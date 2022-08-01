@@ -1,3 +1,12 @@
+"""
+Author      : Rasha Boura
+PI          : Dr. Sampson Akwafuo
+File Name   : Lassa_model.py
+Date        : August 1st, 2022
+"""
+
+
+
 from mesa import Agent, Model
 from mesa.time import RandomActivation 
 from mesa.space import MultiGrid 
@@ -6,11 +15,12 @@ from mesa.datacollection import DataCollector
 
 import random
 import math
+import sys
 
 class superAgent(Agent):
 
     def __init__(self, unique_id, model, init_infection, transmissibility, level_of_movement, 
-    contagious_period, is_human):
+    contagious_period, accessible_treatment, ribavirin_availability, socioeconomic_level_of_human, is_human):
         # Takes cares of the background stuff needed to create a Mesa 'Agent'
         super().__init__(unique_id, model)
 
@@ -21,7 +31,11 @@ class superAgent(Agent):
             self.h2h_transmissibility       = transmissibility
             self.level_of_hum_movement      = level_of_movement
             self.contagious_period_hum      = contagious_period
+            self.accessible_treatment       = accessible_treatment
+            self.ribavirin_availability     = ribavirin_availability
+            self.socioeconomic_level_of_human = socioeconomic_level_of_human
             self.is_human                   = True
+            self.treated                    = False
             self.secondary_transmission_h2h = 0
             self.test_group                 = False
             self.isolate_group              = False
@@ -32,8 +46,12 @@ class superAgent(Agent):
             self.contagious_period_rat      = contagious_period
             self.level_of_rat_movement      = level_of_movement
             self.is_human                   = False
-            self.secondary_transmission_r2h = 0
-        
+            self.secondary_transmission_r2h = 0            
+            self.accessible_treatment       = 0
+            self.ribavirin_availability     = 0
+            self.socioeconomic_level_of_human = 0
+
+
         # I HAVE NO IDEA WHY THIS DOESN'T WORK UNDER THE ELSE BLOCK; TECHINCALLY ONLY BELONGS TO RAT AGENTS 
         self.r2r_transmissibility           = 40
 
@@ -73,6 +91,18 @@ class superAgent(Agent):
 
             if self.contagious_period_rat <= 0:
                 self.infected = False
+
+        if self.is_human and self.infected and self.treated == False:
+            if random.randint(0,100) < self.socioeconomic_level_of_human:
+                self.treated = True
+                self.infected = False
+        
+        if self.is_human and self.infected and self.treated == False:
+            if self.ribavirin_availability != 0:
+                self.treated = True
+                self.infected = False
+                self.ribavirin_availability -=1
+
 
 
     def move(self):
@@ -116,27 +146,26 @@ class superAgent(Agent):
 class lassaModel(Model):
 
     def __init__(self, N_humans, N_rats, test_population, isolation_population, width, height, hum_init_infection, rat_init_infection, hum_transmissibility, rat_transmissibility, hum_level_of_movement, rat_level_of_movement, 
-    contagious_period_hum, contagious_period_rat):
+    contagious_period_hum, contagious_period_rat, accessible_treatment, ribavirin_availability, socioeconomic_level_of_human):
         self.running                = True
         self.num_humans             = N_humans
         self.num_rats               = N_rats
         self.grid                   = MultiGrid(width, height, True)
         self.schedule               = RandomActivation(self)
-
-
         self.hum_transmissibility   = hum_transmissibility
         self.rat_transmissibility   = rat_transmissibility
         self.contagious_period_hum  = contagious_period_hum
         self.contagious_period_rat  = contagious_period_rat
         self.test_population        = test_population
         self.isolation_population   = isolation_population
+        self.accessible_treatment   = accessible_treatment
 
         self.infected_group = []
 
 
         # Creates human agents
         for i in range(self.num_humans):
-            human = superAgent(2*i, self, hum_init_infection, hum_transmissibility, hum_level_of_movement, contagious_period_hum, is_human=True)
+            human = superAgent(2*i, self, hum_init_infection, hum_transmissibility, hum_level_of_movement, contagious_period_hum, accessible_treatment,ribavirin_availability, socioeconomic_level_of_human, is_human=True)
             self.schedule.add(human)
 
             try:
@@ -151,9 +180,10 @@ class lassaModel(Model):
         self.test_group_list    = determineTestGroup(self)
         determineIsolateGroup(self) 
 
+
         # Creates rat agents
         for i in range(self.num_rats):
-            rat = superAgent((2*i)+1, self, rat_init_infection, rat_transmissibility, rat_level_of_movement, contagious_period_rat, is_human=False)
+            rat = superAgent((2*i)+1, self, rat_init_infection, rat_transmissibility, rat_level_of_movement, contagious_period_rat, accessible_treatment=0, ribavirin_availability=0, socioeconomic_level_of_human=0, is_human=False)
             self.schedule.add(rat)
 
             try:
@@ -167,7 +197,7 @@ class lassaModel(Model):
 
 
         self.datacollector = DataCollector(
-            model_reporters={"Daily Reproduction Number":calculate_total_reproduction_number
+            model_reporters={"Daily Reproduction Number":calculate_total_reproduction_number,
                             },
             agent_reporters={}
         )
@@ -287,7 +317,7 @@ def checkInfectionGroup(self):
 def determineTestGroup(self):
     percentage                   = self.test_population/100
     number_of_infected           = len(self.infected_group)
-    number_of_test_group         = percentage*number_of_infected
+    number_of_test_group         = int(percentage*number_of_infected)
     test_group_list              = random.sample(self.infected_group, number_of_test_group)
 
     for i in test_group_list:
@@ -297,8 +327,8 @@ def determineTestGroup(self):
 
 def determineIsolateGroup(self):
     percentage                   = self.isolation_population/100
-    number_of_isolated_group     = percentage*len(self.test_group_list)
+    number_of_isolated_group     = int(percentage*len(self.test_group_list))
     isolated_group_list          = random.sample(self.test_group_list, number_of_isolated_group)
 
     for i in isolated_group_list:
-        i.isolate_group          = True  
+        i.isolate_group          = True 
