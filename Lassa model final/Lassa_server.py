@@ -1,3 +1,10 @@
+"""
+Author      : Rasha Boura
+PI          : Dr. Sampson Akwafuo
+File Name   : Lassa_model.py
+Date        : August 1st, 2022
+"""
+
 from Lassa_model import lassaModel
 from mesa.visualization.modules import CanvasGrid
 from mesa.visualization.ModularVisualization import ModularServer
@@ -6,20 +13,24 @@ from mesa.visualization.modules import ChartModule
 
 def agent_portrayal(agent):
     # Susceptible human
-    portrayal = {"Shape":"hum-sc.png", "Filled":"true", "Layer":1}
+    portrayal = {"Shape":"treatedhuman-tr.png", "Filled":"true", "Layer":1}
 
     # Infected human
     if agent.is_human == True and agent.infected:
-        portrayal["Shape"] = "hum-if.png"
+        portrayal["Shape"] = "infected-pp.png"
         portrayal["Layer"] = 0
     # Susceptible rat
     elif agent.is_human == False and not agent.infected:
-        portrayal["Shape"] = "rat-sc.png"
+        portrayal["Shape"] = "susrat-sc.png"
         portrayal["Layer"] = 2
     # Infeceted rat
     elif agent.is_human == False and agent.infected:
-        portrayal["Shape"] = "rat-if.png"
+        portrayal["Shape"] = "infectedrat-if.png"
         portrayal["Layer"] = 3
+    # treated human
+    elif agent.is_human == True and agent.infected:
+        portrayal["Shape"] = "human-tr.png"
+        portrayal["Layar"] = 0
 
     return portrayal
 
@@ -33,7 +44,8 @@ grid = CanvasGrid(agent_portrayal, 30, 30, 800, 800)
 
 # Creates our charts
 total_reproduction_number_graph = ChartModule(
-    [{"Label":"Daily Reproduction Number", "Color":"SlateBlue"}],
+    [{"Label":"Daily Reproduction Number", "Color":"SlateBlue"},
+    {"Label": "# People testing","Color":"green"}],
     data_collector_name='datacollector'
     )
 
@@ -47,10 +59,19 @@ num_rat_slider = UserSettableParameter(
         'slider', "Number of Rat Agents", 150, 2, 200, 1)
 
 test_population_slider = UserSettableParameter(
-    'slider', "percentage of infected people who isolate themselves ", 0, 0, 100, 1)
+    'slider', "percentage of infected people who test themselves ", 0, 0, 100, 1)
     
 isolation_population_slider = UserSettableParameter(
     'slider', "percentage of test population who isolate themselves", 0, 0 , 100, 1)
+
+accessible_treatment_slider = UserSettableParameter(
+       'slider', "% Increasing Treatment", 10, 1, 100, 1)
+
+ribavirin_availability_slider = UserSettableParameter(
+       'slider', "# Ribavirin Available", 10, 1, 200, 1)
+
+socioeconomic_level_of_human_slider = UserSettableParameter(
+       'slider', "Socioeconomic Level Status", 10, 1, 100, 1)
 
 hum_init_infection_slider = UserSettableParameter(
     'slider', "Probability of Human Initial Infection(%)", 30, 1, 100, 1)
@@ -74,15 +95,25 @@ rat_contagious_period_slider = UserSettableParameter(
     'slider', "Contagious period for rats(days)", 21, 80, 90, 1)
 
 
+#set up user checkboxes
+accessible_treatment_checkbox = UserSettableParameter(
+    'checkbox', "% people using treatment", value=False)
 
 
 
-server = ModularServer(lassaModel, [grid, total_reproduction_number_graph], "Intervention Strategies for the Control of Periodic Lassa Fever Outbreaks", 
+
+
+
+server = ModularServer(lassaModel, [grid, total_reproduction_number_graph], "Modelling of Isolation Intervention Strategies for the Control of Periodic Lassa Fever Outbreaks", 
     {   
         "N_humans": num_human_slider, 
         "N_rats": num_rat_slider,
         "test_population":test_population_slider,
         "isolation_population":isolation_population_slider,
+        "accessible_treatment": accessible_treatment_checkbox,
+        "accessible_treatment": accessible_treatment_slider,
+        "ribavirin_availability": ribavirin_availability_slider,
+        "socioeconomic_level_of_human":socioeconomic_level_of_human_slider,
         "width": 30,
         "height":30,
         "hum_init_infection": hum_init_infection_slider,
@@ -92,6 +123,6 @@ server = ModularServer(lassaModel, [grid, total_reproduction_number_graph], "Int
         "hum_level_of_movement": hum_level_of_movement_slider,
         "rat_level_of_movement": rat_level_of_movement_slider,
         "contagious_period_hum": hum_contagious_period_slider,
-        "contagious_period_rat": rat_contagious_period_slider,    
+        "contagious_period_rat": rat_contagious_period_slider,
     }
 )
