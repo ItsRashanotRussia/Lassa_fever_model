@@ -13,19 +13,19 @@ from mesa.visualization.modules import ChartModule
 
 def agent_portrayal(agent):
     # Susceptible human
-    portrayal = {"Shape":"treatedhuman-tr.png", "Filled":"true", "Layer":1}
+    portrayal = {"Shape":"human-sc.png", "Filled":"true", "Layer":1}
 
     # Infected human
     if agent.is_human == True and agent.infected:
-        portrayal["Shape"] = "infected-pp.png"
+        portrayal["Shape"] = "human-if.png"
         portrayal["Layer"] = 0
     # Susceptible rat
     elif agent.is_human == False and not agent.infected:
-        portrayal["Shape"] = "susrat-sc.png"
+        portrayal["Shape"] = "rat-sc.png"
         portrayal["Layer"] = 2
     # Infeceted rat
     elif agent.is_human == False and agent.infected:
-        portrayal["Shape"] = "infectedrat-if.png"
+        portrayal["Shape"] = "rat-if.png"
         portrayal["Layer"] = 3
     # treated human
     elif agent.is_human == True and agent.infected:
